@@ -121,5 +121,20 @@ A relation between these four domains is a subset of the Cartesian products Í
 
 A \subset cid x cname
 
+### 2.3 Relational Rules
 
+* Rule 1. First Normal Form Rule 第一范式  Can't have multi-valued fields.
 
+1. could create one table with duplicates on different rows but this is bad for other reasons 不知道有多少列 各个元组所需要的列数不同，会造成空间浪费
+2. ends up meaning we have to create two tables and join them in later queries.
+3. in OR model, it's OK, but won't handle this for a while so as not to confuse you. assume relational no multi-valued fields
+
+* Rule 2. Access Rows By Content Only Rule只能根据内容访问（取某一元组）
+  1. can't say the third row down from the top. no order to the rows and the columns
+  2. disallows pointers to rows e.g. row IDs or "refs" 
+  3. Most relational products break this rule by allowing users to get at rows by RIDs
+  4. new object-relational products have refs as part of syntax
+* Rule 3. The Unique Row Rule 元组的唯一性
+  1. two rows can't be same in all attributes at once.So that a relation is an unordered SET of tuples
+  2. but many products allow this for efficiency
+  3. **we will assume that all these rules hold perfectly**
