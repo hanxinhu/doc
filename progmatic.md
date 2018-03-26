@@ -486,3 +486,36 @@ litte tips
 编写程序规范
 
 **Some Things Are Better Done than Described**
+
+**Don't Be a Slave to Formal Methods**
+
+形式方法缺点:
+
+1. 形式方法大多结合图和文字来捕捉需求。对最终用户每一意义，没有对需求进行真正的检查，都以设计者的解释为基础
+2. 似乎鼓励专门化。应该知道各组件是怎么交互、需求是什么
+3. 动态系统
+
+**Expensie Tools Do Not Produce Better Design**
+
+## Pragmatic Projects
+
+**Organize Around Functionality, Not Job Functions**
+
+文明通过增加我们不加思索就能完成的重要操作的数目而取得进步——阿尔弗雷德 诺思 怀特海
+
+**Don't Use Manual Procedures**
+
+
+
+**Test Early Test Often Test Automatically**
+
+**Coding Ain't Done Till All the Tests Run**
+
+**Use Saboteurs to Test Your Testing**
+
+coverage analysis
+
+**Test State Coverage, Not Code Coverage**
+
+**Find Bugs Once**
+
