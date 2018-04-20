@@ -288,3 +288,276 @@ C and D are conditions.  new conditions can be writing C AND D, C OR D, NOT C
 |            |                  |
 | Lowest     |                  |
 
+#chapter 3 SQL
+
+SQL Structured Query Language
+
+语言基本成分
+
+* 符号 26个英文字母，括号，阿拉伯数字，四则运算
+* 保留字 
+  * 标识语句类型 CREATE, SELECT,INSERT,ALTER
+  * 标识对象类型 TABLE,VIEW,PROCEDURE,TRIGGER
+  * 标识语句成分 unique,primary key,with check option
+  * 数据类型，内置函数
+  * 可编程SQL中的流程控制命令，if then else. while... for....
+* 标识符
+* 常量
+
+
+
+基本标识规范
+
+* 完整的SQL语句 以命令动词开始， 以分号;作为结束符
+  * 可以一次只执行一条，也可以一次执行多条（批处理）
+  * 批处理下，分号既可以作为前一条语句的结束符，也可以看做不同SQL语句间的分隔符
+* 除常量外，SQL语言中的其他成分仅支持西文字符，且字母不区分大小写
+  * 保留字、表名、列名都不区分大小写
+* 字符或日期、时间类型的常量通常使用单引号定界符，可支持不同的日期显示格式
+
+
+
+ANSI SQL Datatype
+
+* CHARACTER DataType
+* NUMERIC DataType
+* DATA/TIME DataType
+
+| name                 | comments                         |
+| -------------------- | -------------------------------- |
+| CHARACTER(n)         | fixed-lenth character strings    |
+| CHAR(n)              |                                  |
+| CHARACTER VARYING(n) | variable-length character things |
+| CHAR VARYING(n)      |                                  |
+
+| name     | comments                                                  |
+| -------- | --------------------------------------------------------- |
+| INTEGER  | represents an integer. minimum and maximum depends on DBA |
+| SMALLINT |                                                           |
+| BIGINT   |                                                           |
+
+| name             | comments                                                     |
+| ---------------- | ------------------------------------------------------------ |
+| DECIMAL(p,s)     | Exact numerical, precision p, scale s.<br>precision: total number of  digits<br>scale: number of digitsto the right of the decimal point |
+| NUMERIC(p,s)     |                                                              |
+| float            |                                                              |
+| real             |                                                              |
+| double precision |                                                              |
+
+
+
+Oracle: 
+
+| name       | comments                                                   |
+| ---------- | ---------------------------------------------------------- |
+| CHAR(n)    |                                                            |
+| VARCHAR(n) |                                                            |
+| LONG       | variable-length character data(text data maximum-size 2GB) |
+|            |                                                            |
+
+SQL Structured Query Language
+
+SQL statement for data manipulation
+
+* SELECT
+* INSERT
+* DELETE
+* UPDATE
+
+
+
+contents
+
+SELECT
+
+
+
+SELECT ... FROM ...	[WHERE .....]
+
+[GRPUP BY...[HAVING ....]] \[ORDER BY]
+
+
+
+* ALL | DISTINCT
+  * select distinct pid from orders 返回不重复的pid
+  * select all pid from orders返回值可能重复
+
+
+
+table and column alias
+
+* table_name as alias_name
+* table_name alias_name
+
+SELECT DISTINCT CNAME,ANAE FROM CUSTOMERS C,ORDERS O ,AGENTS A
+
+WHERE C.CID = O.CID
+
+
+
+* column alias in select clause
+
+  SELECT ordno, dollars, o.qty * p.price * (1-c.discnt*0.01) as my dollars
+
+  FROM customers c,orders o ,products p
+
+  where c.cid = o.cid and o.pid = p.pid
+
+
+
+SELECT c1.cid c2.cid
+
+FROM customers c1, customers c2
+
+where c1.city = c2.city and c1.cid <c2.cid
+
+
+
+* select [distinct] column name list | expressions | *
+  * 目标子句
+  * 单个属性的投影、一个表达式的计算结果
+  * \* 表示所有属性
+  * distinct可以进行唯一性检查
+* from table-list
+  * 范围子句 定义可以访问的关系表
+  * 可以定义别名
+  * 别名不能重名
+  * 同名的属性通过表名.属性名确定列否则可以直接通过属性名
+
+
+
+##subquery
+
+子查询有关的谓词(predicate)
+
+* in
+* some
+* any
+* all
+* exist
+* is null
+* between
+* like column [not] like val1 [escape val2] 
+  * underscore_ 单个字符 
+  * percent % any sequence of zero or more characters
+
+
+
+
+
+* uncorrelated subquery
+  * subquery is completely independent of outer one
+* correlated subquery
+  * subquery use data from an outer select phrase
+* scoping rule
+  * variables from outer selects can be used in inner subqueries,but reverse is not true
+
+
+
+expr $\theta$ SOME|ANY (subquery)
+
+if and only if. at least one element is returned by subquery, expression is true
+
+
+
+expr $\theta$ ALL(subquery) expression is true for every one of the elements
+
+
+
+the like predicate
+
+colname [not] like val1 [escape val2转义指示符]
+
+ underscore. _ single character
+
+percent % any sequence
+
+escape character: precedes quoted literal character
+
+
+
+## Union Operator and For All Conditions
+
+* the union operator并
+  * subquery union subquery
+    * NO duplicate rows
+  * subquery union all subquery
+    * may have duplicate subquery
+
+集合运算
+
+union
+
+intersect
+
+except
+
+minus
+
+必须是相容的compatible
+
+intersect and except / minus 不是必须的 以及 结果列中必须含有关键字，否则可能会出现错误
+
+
+
+* 对表进行重命名时，可以重新定义表中属性的属性名
+
+* 可以在from子句中嵌入一个subquery 不是必须的 可以通过定义视图view实现
+
+  ```sql
+  select c.cid, c.cname
+  from customers c, (select avg(discnt) as avg_dis form custerms) as w 
+  where c.discnt > w.avg_dis
+  ```
+
+
+
+| name  | argument type   | result type | description    |
+| ----- | --------------- | ----------- | -------------- |
+| count | any             |             | counts of rows |
+| sum   |                 |             |                |
+| avg   |                 |             |                |
+| max   | char or numeric | same as arg |                |
+| min   | char or numeric | same as arg |                |
+
+可以在select和 having中使用统计函数
+
+* select + 统计函数
+* select 分组属性+ 统计函数 group by 分组
+* select group by 分组属性 + having 组选择条件
+
+
+
+先执行查询得到满足条件的结果元组集合S,再根据select子句中的要求进行统计计算，输出统计结果
+
+
+
+### handing null values
+
+* a null value is not equal to any values(including a null value)
+* set functions must also ignore null values(including the count function)
+  * Note Count不存在空值问题
+* the value returned by a set function acting an empty set of values is
+  * count(...) return 0
+  * others return null value
+
+
+
+select count(distinct city) from customers 非空且互不相同的city的值
+
+select count(city) from customers 非空的city值
+
+select count(*) from customers 元组的个数
+
+
+
+group by clause & having clause
+
+带group by子句的查询被称为分组统计查询，group By称为分组属性
+
+还可以再有having 子句 
+
+
+
+在分组选择查询中，查询结果可以没有统计值
+
