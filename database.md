@@ -561,3 +561,522 @@ group by clause & having clause
 
 在分组选择查询中，查询结果可以没有统计值
 
+# chapter 4 Object-Relational SQL(Oracle)
+
+ORDB: 提供元组、数组、集合一类丰富的数据类型以及除了新的数据类型的操作 有继承性和对象标识等特点
+
+
+
+数据类型定义：
+
+* 基本类型
+* 复合类型
+  * 结构类型
+  * 数组类型
+  * 集合类型
+
+## 4.1 Object Type
+
+composite structured type
+
+定义新的数据类型
+
+```sql
+create type typename as OBJECT(attrname datatype,...);
+DROP TYPE typename;
+```
+
+一经定义就以持久形式保存在数据库中，可以使用像内置的数据类型一样使用这些复杂的数据类型，以扩充系统的数据类型
+
+example
+
+```mysql
+create type name_t as object(Iname varchar(30)
+                            fname varchar(30)
+                            mi char(1));
+create type doc as object(
+name varchar(30)
+author varchar(30)
+data Date);           
+create table customers(
+cid char(4) not null,
+primary key(cid)
+);
+                            
+```
+
+对象类型的使用
+
+* 使用所创建的对象类型来创建新类型
+* 使用所创建的对象类型来创建新的表
+* 使用对象数据类型来直接创建一张表
+  * 表结构与对象类型结构相同
+  * 在创建的表中增加完整性约束
+
+```mysql
+create type person_t as object(
+	ssno int,
+    pname name_t,
+    age int
+);
+create table teachers(
+	tid int,
+    tname name_t,
+    room int
+);
+create table tablename of typename{(constraint-define)}
+create table people of person_t(
+	primary key(ssno)
+);
+```
+
+### 对象值的创建、查询 更新
+
+创建：构造函数
+
+对象构造函数
+
+typename(argument,....) 
+
+`name_t('Einstein,'Albert','E')`
+
+返回对象取值的函数
+
+value(...)
+
+查询 通过类型的值
+
+```mysql
+create table teachers(
+	tid int,
+	tname name_t,
+	room int);
+select t.tid,t.tname,t.fname form teachers t
+where t.room = 123
+
+```
+
+对象值的更新
+
+* 修改整个对象值
+  * 表中的一个属性的值域是对象类型时，可以用‘对象’值直接对该属性进行赋值
+  * 一张表基于对象类型创建 那么对象值可以直接修改整个元组
+* 可以修改对象中成员属性的值
+
+
+
+对象的引用类型
+
+* 引用类型 ref < object type >
+  * 指向某个元组对象的指针类型
+  * 用于实现对象类型之间的嵌套引用
+* 在使用含有ref类型的对象类型(Object Type)来创建表时，必须使用Scope for子句来限制 REF 属性的取值范围
+
+
+
+#### 定义类型直接的引用关系
+
+* 定义方法
+  * 先定义一个对象类型 X
+  * 然后再定义一个对象属性 Y，在类型Y中含有对类型 X的引用属性（REF）属性，从而构成了类型X与类型Y之间的引用关系
+* X 被称为基本对象类型 （被引用类型）
+* Y 称为引用类型
+
+```mysql
+create type customer_t as object(
+	cid char(4)
+    cname varchar(13)
+    city varchar(20)
+    discnt real
+)
+create type order_t as object(
+	ordno int,
+    month char（3）
+    ordcust ref customer_t
+)
+```
+
+#### 创建含有引用类型的关系表
+
+* 基本方法
+  * 先使用基本对象类型创建响应 的 基本关系表
+  * 再使用含有ref属性的引用类型创建对应的关系表
+
+```sql
+create table customers of customer_t(primary key(cid))
+create table orders of order_t(
+	primary key(ordno),
+	scope for（ordcust) is customers
+```
+
+scope for子句限制ref的取值范围 在某个table内
+
+#### 引用关系查询
+
+根据元组ref引用关系进行查询
+
+```sql
+select o.ordno o.ordcust.cname
+form orders o 
+where o.dollars > 200.0
+```
+
+#### 引用关系查询
+
+```sql
+select distinct x1.pid 
+form oders x1 , orders x2
+where x1.pid = x2.pid and x1.ordcust< x2.ordcust
+等价 ordcust 承担起 cid的责任
+select distinct x1.pid
+form orders x1,orders x2
+where x1.pid= x2.pid and x1.cid < x2.pid
+```
+
+
+
+#### 函数与谓词
+
+* 两个函数
+  * 获取对象（元组）的引用指针：REF（。。。）
+  * 返回引用指针所指向对象的值：DEREF(....)
+* 两个谓词
+  * is dangling
+  * is NULL
+* IS DANGLING 
+  * 用于判断所引用的原组是否存在
+  * 不存在返回TRUE,否则返回FALSE
+  * 主要用于检测那些错误的对象引用指针
+* IS NULL
+  * 也可以使用 is null来查找取值为null的ref属性
+  * 但是is dangling 不等于 is null
+* A dangling ref is non-null but useless
+* if o.ordcust is null or dangling , then o.ordcust.cname is null
+
+#### 类型的循环嵌套定义
+
+obeject type不能嵌套定义，但是ref关系可以实现嵌套引用
+
+```sql
+create type police_officer_t as object(
+	pol_person person_t,
+    badge_number integer,
+    partner ref police_officer_t
+)
+create table police_officers of police (
+	primary key(badge_number),
+    scope for (partner) is police_officers
+)
+
+
+
+```
+
+
+
+#### 其他约束
+
+有关ref定义的其他约束（REF Dependencies)
+
+1. 两张表之间的相互REF关系的定义
+
+   1. 首先，定义两个具有相互ref关系的对象
+      1. 部分创建（partially create)第一个对象类型（只给出类型名，没有类型的详细定义）
+      2. 详细定义第二个对象类型（包含对第一个类型的引用属性）
+      3. 再详细定义第一个对象类型
+   2. 再用创建好的对象类型创建关系表
+
+2. 两个具有相关REF关系的表/类型的删除
+
+   1. 删除类型drop type之前需要先删除表 drop table
+
+   2. 删除类型 drop type 时需要采用强制删除方式
+
+      `drop type typename force`
+
+3. REF属性数据的加载
+
+   1. 方法一 先不管ref属性的赋值，再使用update操作修改ref属性的取值
+   2. 使用带有子查询的插入操作
+
+```sql
+update orders o
+set ordcust = (select ref(c) from customers c where c.cid = o.cid)
+
+insert into police_officers
+select value(p),1000,ref(p0)
+from people p, police_officers p0
+where p.ssno = 1234 and p0.badge_number = 99
+```
+
+### collection Type
+
+collection type allow us to put multiple values(collections of values ) in a column of an individual row
+
+* table type(nested table)
+* array types
+  * containing items all of the same type **element type**
+
+
+
+```sql
+create type dependents_t as table of person_t
+create table employees(
+	eid int,
+    eperson person_t,
+    dependents denpendents_t
+    primary key(eid)
+)
+nested table dependents store as dependents_tab
+```
+
+创建两个关系表
+
+* employee 职工记录
+* dependents_tab 家属信息 嵌套表
+
+
+
+nested table 访问
+
+```sql
+select dependents
+from employees
+where eid = 101
+
+select eid
+from employees e
+where 6 <(select counts(*) from table(e.denpendents))
+```
+
+
+
+* Oracle 数据库没有提供nested table的相等比较运算
+  * 可以使用IN操作符来实现某些需要通过nested table进行的查询功能
+
+不支持对嵌套属性的统计查询功能
+
+
+
+Array Types for varrays
+
+```sql
+create type extensions_t as varray(4) of int
+
+```
+
+|          | nested table | varray         |
+| -------- | ------------ | -------------- |
+| 排列次序 | 无序         | 有序           |
+| 最大数目 | 没有限制     | 确定的值       |
+| 存储组织 | 单独的存储表 | 直接存储在表中 |
+
+
+
+nested table与 varray
+
+可以通过嵌套表属性执行insert操作，或通过update操作修改其成员的取值
+
+
+
+但是varray不能插入或修改，只能通过update语句修改整个varray的取值
+
+
+
+Embedded SQL 嵌入式数据库
+
+SQL statements embedded in host language
+
+```c
+exec sql 
+	select count(*) into :host_var
+	from customers
+
+```
+
+* host variable(program variable) prefix(colon : ) of variable shows DBMS this is a program variable
+* host variable can be used to
+  * 接收DBMS产生的 值
+  * 存取hostlanguage产生的值
+
+  ​
+
+# chapter 6 Database Design
+
+*  database design ： the process of producing a detailed data model of database
+* logical data model . logical and physical design choices and physical storage parameters needed to generate a design in a **data definition* language**
+* ​
+
+
+
+​	关系数据模型
+
+* Entity-Relationship(ER) model: an abstract way to describe a database
+* design approach, entity-relationship modelling, is more intuitive, less mechanical, but basically leads to the same end design
+
+
+
+* ER Model
+  * three fundamental data classification objects
+    * entity
+    * attribute
+    * relationship
+* the contents of this section
+  * entities, attributes, and sample ER Diagrams
+  * Transforming Entities and Attributes to Relations
+  * Relationships among Entites
+
+
+
+* Entity
+  * a collection of distinguishable real-world objects with common properties
+  * an entity instance is a real-world object
+    * physical object
+    * an event
+    * a concept
+* An entity such is mapped to a relationship table
+  * represents a set of  objects
+* each row is an entity occurrence, or entity instance
+  * represents a particular object
+
+
+
+* Attribute 
+  * an attribute is a data item that describes a property of an entity or a relationship
+
+
+
+special terminology for special kinds of attributes
+
+* identifier,  id
+
+* descriptor
+
+* single-valued
+
+* composite_ attribute
+
+* multi-valued attribute
+
+  ​
+
+identifier(candidate key)
+
+* an identifier is an attribute or set of attribues that uniquely identifies an entity instance
+* there might be more than one identifier for a given entity
+
+primary identifier(主键)
+
+*  a single key identified by DBA
+
+descriptor
+
+* a descriptor is a non-key attribute,descriptive
+
+composite attribute
+
+* a group of simple attributes that together describe a property
+
+multi-valued attribute 
+
+* can take on multiple values for a single entity instance
+
+
+
+Transforming Entities and Attributes to Relations
+
+* An entity is mapped to a single table
+* a multi-valued attribute must be mapped to its own table
+
+
+
+relationships among entities
+
+* a relationship R defines a rule of correspondence between the instances of these entities
+* degree of relationship
+  * the number of entities m in the defining list
+* binary relationship
+  * between two entities
+* ring or recursive relationship
+  * a binary relationship between an entity and itself 
+* N-ary
+
+
+
+联系 relationship用菱形符号表示
+
+![](pic/relationship.png)
+
+
+
+**Cardinality of Entity Participation in a relationship**
+
+* Entities E and F, relationship R
+  * dots are instances
+  * lines are relationship instances
+  * ​
+
+if max-card(X,R)=1 X is said to have single-valued participation单值参与
+
+if max-card(X,R) = N, x is said to have multi-valued particifation
+
+
+
+is min-car(X,R) = 1 **mandatory participation**强制参与
+
+min-card(X,R) = 0, optional participation 可选参与
+
+
+
+one-to-one
+
+both entities are single-valued in the relationship(max-card concept  only)
+
+many-to-one
+
+one entity is multi-valued and one is single valued
+
+many-to-many
+
+both entities are multi-valued 
+
+**N-N relationships**
+
+* when two entities E and F take part in many-to-many binary relatinship R, the relationship is mapped to a representative table T in the related relational database design
+
+
+
+the table T contains columns for all attributes in the primary keys of both tables transformed from entities E and F
+
+* this set of column forms the primary key for the table T
+
+T also contains columns for all attributes attached to the relationship
+
+
+
+**N-1 Relationships**
+
+represent with foreign key in entity with single valued participation(the many side)
+
+since max-card(F,R)=1,each row of T is related by a foreign key value to at most one instance of the entity E
+
+
+
+Optional on one side
+
+* represent as two tables, foreign key column in one with mandatory participation: column defined to be NOT NULL
+
+Mandatory on both sides
+
+* never can break apart. it's appropriate to think of this as two entities in a single table
+
+
+
+cardinality 基数
+
+
+
+weak entities
+
+* a weak entity is an entity whose occurences are dependent for their existence, through a relationship R, on the occurence of another(strong entity)
+* ​
